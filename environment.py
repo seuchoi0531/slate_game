@@ -27,12 +27,15 @@ card_type_img = [0 for _ in range(CARD_NUMBER)]
 card_rein_img = [0 for _ in range(CARD_REIN)]
 next_card_img1 = [0 for _ in range(CARD_NUMBER)]
 next_card_img2 = [0 for _ in range(CARD_NUMBER)]
+breakprob15img = [0 for _ in range(6)]
+breakprob25img = [0 for _ in range(4)]
 
 selected_card = 2 #현재 고른 카드의 번호 / 0:왼쪽 1:오른쪽 2:선택안했음
 flag = 0
 
 w = tk.Tk()
 canvas = tk.Canvas(bg='white', height=HEIGHT * UNIT, width=WIDTH * UNIT)
+w.title("Slate Game")
 current_dir = os.path.dirname(os.path.abspath(__file__))
 slateImg = ImageTk.PhotoImage(Image.open(os.path.join(current_dir, 'img/slate.png'))
                               .resize((int(SLATE_LENGTH * UNIT / SLATE_NUM), int(SLATE_LENGTH * UNIT / SLATE_NUM))))
@@ -57,11 +60,21 @@ nextCardPanel = ImageTk.PhotoImage(Image.open(os.path.join(current_dir, 'img/nex
 arrow = ImageTk.PhotoImage(Image.open(os.path.join(current_dir, 'img/arrow.png'))
                            .resize((int(7.5 * UNIT), int(7.4 * UNIT))))
 
+probname = 'img/slate_breakprob'
 cardname = 'img/card_name'
 cardtype = 'img/card'
-tail = '.png'
 rein = 'img/rein'
 nextcardtype = 'img/next_card'
+tail = '.png'
+
+for i in range(0,6):
+    str1 = probname + str(100 - i * 15) + tail
+    breakprob15img[i] = ImageTk.PhotoImage(Image.open(os.path.join(current_dir, str1))
+                              .resize((int(SLATE_LENGTH * UNIT / SLATE_NUM), int(SLATE_LENGTH * UNIT / SLATE_NUM))))
+for i in range(0,4):
+    str1 = probname + str(100 - i * 25) + tail
+    breakprob25img[i] = ImageTk.PhotoImage(Image.open(os.path.join(current_dir, str1))
+                              .resize((int(SLATE_LENGTH * UNIT / SLATE_NUM), int(SLATE_LENGTH * UNIT / SLATE_NUM))))
 
 for i in range(0,CARD_NUMBER):
     str1 = cardname + str(i) + tail
@@ -82,12 +95,12 @@ for i in range(0,CARD_REIN):
                            .resize((int(12 * UNIT), int(19 * UNIT))))
     
 #석판 생성
-for col in range(0,SLATE_NUM):
-    for row in range(0,SLATE_NUM):
-        slate[col][row] = slateImg
-        slate_img[col][row] = canvas.create_image(16 * UNIT + SLATE_LENGTH * UNIT / (2 * SLATE_NUM) + SLATE_LENGTH * UNIT * row / SLATE_NUM, 
+for row in range(0,SLATE_NUM):
+    for col in range(0,SLATE_NUM):
+        slate[row][col] = slateImg
+        slate_img[row][col] = canvas.create_image(16 * UNIT + SLATE_LENGTH * UNIT / (2 * SLATE_NUM) + SLATE_LENGTH * UNIT * row / SLATE_NUM, 
                             16 * UNIT + SLATE_LENGTH * UNIT / (2 * SLATE_NUM) + SLATE_LENGTH * UNIT * col / SLATE_NUM, 
-                            image=slate[col][row])
+                            image=slate[row][col])
         
 #카드 생성
 card[0] = card_exampleImg
@@ -128,8 +141,19 @@ def click(event):
     click_slate(event)
     click_card_change(event)
 
+hoverflag = 0
 def hover(event):
-    hover_slate(event)
+    global selected_card
+    global hoverflag
+    if selected_card != 2:
+        if (event.x > 16 * UNIT and event.x < 16 * UNIT + SLATE_LENGTH * UNIT
+        and event.y > 16 * UNIT and event.y < 16 * UNIT + SLATE_LENGTH * UNIT):
+            hoverflag = 1
+            hover_slate(event)
+        else:
+            if hoverflag == 1:
+                hoverflag = 0
+                not_hover_slate(event)
 
 def release(event):
     release_slate(event)
@@ -144,31 +168,25 @@ def click_slate(event):
     if selected_card != 2:
         if (event.x > 16 * UNIT and event.x < 16 * UNIT + SLATE_LENGTH * UNIT
             and event.y > 16 * UNIT and event.y < 16 * UNIT + SLATE_LENGTH * UNIT):
-            for col in range(0,SLATE_NUM):
-                for row in range(0,SLATE_NUM):
+            for row in range(0,SLATE_NUM):
+                for col in range(0,SLATE_NUM):
                     if (event.x > 16 * UNIT + SLATE_LENGTH * UNIT * row / SLATE_NUM and event.x < 16 * UNIT + SLATE_LENGTH * UNIT * (row + 1) / SLATE_NUM 
                         and event.y > 16 * UNIT + SLATE_LENGTH * UNIT * col / SLATE_NUM and event.y < 16 * UNIT + SLATE_LENGTH * UNIT * (col + 1) / SLATE_NUM) :
-                        canvas.itemconfig(slate_img[col][row], image=slate_clickImg)
-                        slate, card, nextcard = env.use_card(col,row)
+                        canvas.itemconfig(slate_img[row][col], image=slate_clickImg)
+                        slate:Slate = env.use_card(row,col)[0]
                         if flag == 1:
                             canvas.create_text(WIDTH * UNIT / 2, HEIGHT * UNIT / 2, 
                                                text="WIN", fill="black", font=("Helvetica 250 bold"))
                         env.reinforcement_card()
-                        for col in range(0,SLATE_NUM):
-                            for row in range(0,SLATE_NUM):
-                                if slate[col][row] == 0 :
-                                    canvas.itemconfig(slate_img[col][row], image=slate_breakImg)
-                                elif slate[col][row] == 1:
-                                    canvas.itemconfig(slate_img[col][row], image=slateImg)
-                        canvas.itemconfig(env_card_rein_img[0], image=card_rein_img[env.card[0].get_rein()])
-                        canvas.itemconfig(env_card_rein_img[1], image=card_rein_img[env.card[1].get_rein()])
-                        canvas.itemconfig(env_card_type_img[0], image=card_type_img[env.card[0].get_num()])
-                        canvas.itemconfig(env_card_type_img[1], image=card_type_img[env.card[1].get_num()])
-                        canvas.itemconfig(env_card_name_img[0], image=card_name_img[env.card[0].get_num()])
-                        canvas.itemconfig(env_card_name_img[1], image=card_name_img[env.card[1].get_num()])
-                        canvas.itemconfig(env_next_card_img[0], image=next_card_img1[env.nextcard[0].get_num()])
-                        canvas.itemconfig(env_next_card_img[1], image=next_card_img1[env.nextcard[1].get_num()])
-                        canvas.itemconfig(env_next_card_img[2], image=next_card_img2[env.nextcard[2].get_num()])
+                        for y in range(0,SLATE_NUM):
+                            for x in range(0,SLATE_NUM):
+                                print(slate[x][y].num, end=' ')
+                                if slate[x][y].num == 0 :
+                                    canvas.itemconfig(slate_img[x][y], image=slate_breakImg)
+                                elif slate[x][y].num == 1:
+                                    canvas.itemconfig(slate_img[x][y], image=slateImg)
+                            print()
+                        cards_img_switch()
                         if selected_card == 0:
                             canvas.itemconfig(card_img[0], image=card_exampleImg)
                             selected_card = 2
@@ -179,43 +197,112 @@ def click_slate(event):
                         print(row, end=' ')
                         print(col, end='\n\n')
                         time.sleep(0.1)
+    print("-----------------------------")
 
 #석판 클릭하면서 움직임 인식 함수
 def motion_slate(event):
     if (event.x > 16 * UNIT and event.x < 16 * UNIT + SLATE_LENGTH * UNIT
         and event.y > 16 * UNIT and event.y < 16 * UNIT + SLATE_LENGTH * UNIT):
-        for col in range(0,SLATE_NUM):
-            for row in range(0,SLATE_NUM):
+        for row in range(0,SLATE_NUM):
+            for col in range(0,SLATE_NUM):
                 if (event.x > 16 * UNIT + SLATE_LENGTH * UNIT * row / SLATE_NUM and event.x < 16 * UNIT + SLATE_LENGTH * UNIT * (row + 1) / SLATE_NUM 
                     and event.y > 16 * UNIT + SLATE_LENGTH * UNIT * col / SLATE_NUM and event.y < 16 * UNIT + SLATE_LENGTH * UNIT * (col + 1) / SLATE_NUM) :
-                    canvas.itemconfig(slate_img[col][row], image=slate_clickImg)
-                    print(row, end=' ')
-                    print(" ", end=' ')
-                    print(col, end='\n\n')
+                    canvas.itemconfig(slate_img[row][col], image=slate_clickImg)
+                    #print(row, end=' ')
+                    #print(" ", end=' ')
+                    #print(col, end='\n\n')
                     time.sleep(0.1)
 
 #석판 호버 인식 함수
 def hover_slate(event):
-    if (event.x > 16 * UNIT and event.x < 16 * UNIT + SLATE_LENGTH * UNIT
-        and event.y > 16 * UNIT and event.y < 16 * UNIT + SLATE_LENGTH * UNIT):
+    global selected_card
+    for row in range(0,SLATE_NUM):
         for col in range(0,SLATE_NUM):
-            for row in range(0,SLATE_NUM):
-                if (event.x > 16 * UNIT + SLATE_LENGTH * UNIT * row / SLATE_NUM and event.x < 16 * UNIT + SLATE_LENGTH * UNIT * (row + 1) / SLATE_NUM 
-                    and event.y > 16 * UNIT + SLATE_LENGTH * UNIT * col / SLATE_NUM and event.y < 16 * UNIT + SLATE_LENGTH * UNIT * (col + 1) / SLATE_NUM) :
-                    canvas.itemconfig(slate_img[col][row], image=slate_hoverImg)
-                    #print(row, end=' ')
-                    #print(" ", end=' ')
-                    #print(col, end='\n\n')
+            if env.slate[row][col].num == 1:
+                canvas.itemconfig(slate_img[row][col], image=slateImg)
+            if env.slate[row][col].num == 0:
+                canvas.itemconfig(slate_img[row][col], image=slate_breakImg)
+    for row in range(0,SLATE_NUM):
+        for col in range(0,SLATE_NUM):
+            if (event.x > 16 * UNIT + SLATE_LENGTH * UNIT * row / SLATE_NUM and event.x < 16 * UNIT + SLATE_LENGTH * UNIT * (row + 1) / SLATE_NUM 
+                and event.y > 16 * UNIT + SLATE_LENGTH * UNIT * col / SLATE_NUM and event.y < 16 * UNIT + SLATE_LENGTH * UNIT * (col + 1) / SLATE_NUM) :
+                #print(row, end=' ')
+                #print(" ", end=' ')
+                #print(col, end='\n\n')
+                if env.slate[row][col].num == 1 :
+                    canvas.itemconfig(slate_img[row][col], image=breakprob15img[0])
+                    if env.card[selected_card].num == 0:
+                        for i in range(1, 6):
+                            if col - i >= 0 and row - i >= 0:
+                                if env.slate[row - i][col - i].num == 1:
+                                    canvas.itemconfig(slate_img[row - i][col - i], image=breakprob15img[max(0, i - env.card[selected_card].reinforcementStep)])
+                            if row + i < SLATE_NUM and col - i >= 0:
+                                if env.slate[row + i][col - i].num == 1:
+                                    canvas.itemconfig(slate_img[row + i][col - i], image=breakprob15img[max(0, i - env.card[selected_card].reinforcementStep)])
+                            if row - i >= 0 and col + i < SLATE_NUM:
+                                if env.slate[row - i][col + i].num == 1:
+                                    canvas.itemconfig(slate_img[row - i][col + i], image=breakprob15img[max(0, i - env.card[selected_card].reinforcementStep)])
+                            if col + i < SLATE_NUM and row + i < SLATE_NUM:
+                                if env.slate[row + i][col + i].num == 1:
+                                    canvas.itemconfig(slate_img[row + i][col + i], image=breakprob15img[max(0, i - env.card[selected_card].reinforcementStep)])
+                    elif env.card[selected_card].num == 1:
+                        for i in range(1, 6):
+                            if row - i >= 0:
+                                if env.slate[row - i][col].num == 1:
+                                    canvas.itemconfig(slate_img[row - i][col], image=breakprob15img[max(0, i - env.card[selected_card].reinforcementStep)])
+                            if row + i < SLATE_NUM:
+                                if env.slate[row + i][col].num == 1:
+                                    canvas.itemconfig(slate_img[row + i][col], image=breakprob15img[max(0, i - env.card[selected_card].reinforcementStep)])
+                    elif env.card[selected_card].num == 2:
+                        for i in range(1, 6):
+                            if col - i >= 0:
+                                if env.slate[row][col - i].num == 1:
+                                    canvas.itemconfig(slate_img[row][col - i], image=breakprob15img[max(0, i - env.card[selected_card].reinforcementStep)])
+                            if col + i < SLATE_NUM:
+                                if env.slate[row][col + i].num == 1:
+                                    canvas.itemconfig(slate_img[row][col + i], image=breakprob15img[max(0, i - env.card[selected_card].reinforcementStep)])
+                    elif env.card[selected_card].num == 3:
+                        for i in range(1, 6):
+                            if row - i >= 0:
+                                if env.slate[row - i][col].num == 1:
+                                    canvas.itemconfig(slate_img[row - i][col], image=breakprob15img[max(0, i - env.card[selected_card].reinforcementStep)])
+                            if row + i < SLATE_NUM:
+                                if env.slate[row + i][col].num == 1:
+                                    canvas.itemconfig(slate_img[row + i][col], image=breakprob15img[max(0, i - env.card[selected_card].reinforcementStep)])
+                            if col - i >= 0:
+                                if env.slate[row][col - i].num == 1:
+                                    canvas.itemconfig(slate_img[row][col - i], image=breakprob15img[max(0, i - env.card[selected_card].reinforcementStep)])
+                            if col + i < SLATE_NUM:
+                                if env.slate[row][col + i].num == 1:
+                                    canvas.itemconfig(slate_img[row][col + i], image=breakprob15img[max(0, i - env.card[selected_card].reinforcementStep)])
+                    elif env.card[selected_card].num == 4:
+                        
+                        for x in range(0, SLATE_NUM):
+                            for y in range(0, SLATE_NUM):
+                                distance = max(abs(row - x), abs(col - y))
+                                if distance == 0:
+                                    if env.slate[x][y].num == 1:
+                                        canvas.itemconfig(slate_img[x][y], image=breakprob25img[0])
+                                elif distance < env.card[selected_card].reinforcementStep + 2:
+                                    if env.slate[x][y].num == 1:
+                                        canvas.itemconfig(slate_img[x][y], image=breakprob25img[max(0, 2 + distance - env.card[selected_card].reinforcementStep)])
+
+
+def not_hover_slate(event):
+    for row in range(0,SLATE_NUM):
+        for col in range(0,SLATE_NUM):
+            if env.slate[row][col].num == 1:
+                canvas.itemconfig(slate_img[row][col], image=slateImg)
 
 #석판 클릭 해제 인식 함수
 def release_slate(event):
     if (event.x > 16 * UNIT and event.x < 16 * UNIT + SLATE_LENGTH * UNIT
         and event.y > 16 * UNIT and event.y < 16 * UNIT + SLATE_LENGTH * UNIT):
-        for col in range(0,SLATE_NUM):
-            for row in range(0,SLATE_NUM):
+        for row in range(0,SLATE_NUM):
+            for col in range(0,SLATE_NUM):
                 if (event.x > 16 * UNIT + SLATE_LENGTH * UNIT * row / SLATE_NUM and event.x < 16 * UNIT + SLATE_LENGTH * UNIT * (row + 1) / SLATE_NUM 
                     and event.y > 16 * UNIT + SLATE_LENGTH * UNIT * col / SLATE_NUM and event.y < 16 * UNIT + SLATE_LENGTH * UNIT * (col + 1) / SLATE_NUM) :
-                    canvas.itemconfig(slate_img[col][row], image=slate_hoverImg)
+                    canvas.itemconfig(slate_img[row][col], image=slate_hoverImg)
                     #print(row, end=' ')
                     #print(" ", end=' ')
                     #print(col, end='\n\n')
@@ -247,15 +334,7 @@ def click_card_change(event):
         env.change_card(0)
         print("change card1")
         env.reinforcement_card()
-        canvas.itemconfig(env_card_rein_img[0], image=card_rein_img[env.card[0].get_rein()])
-        canvas.itemconfig(env_card_rein_img[1], image=card_rein_img[env.card[1].get_rein()])
-        canvas.itemconfig(env_card_type_img[0], image=card_type_img[env.card[0].get_num()])
-        canvas.itemconfig(env_card_type_img[1], image=card_type_img[env.card[1].get_num()])
-        canvas.itemconfig(env_card_name_img[0], image=card_name_img[env.card[0].get_num()])
-        canvas.itemconfig(env_card_name_img[1], image=card_name_img[env.card[1].get_num()])
-        canvas.itemconfig(env_next_card_img[0], image=next_card_img1[env.nextcard[0].get_num()])
-        canvas.itemconfig(env_next_card_img[1], image=next_card_img1[env.nextcard[1].get_num()])
-        canvas.itemconfig(env_next_card_img[2], image=next_card_img2[env.nextcard[2].get_num()])
+        cards_img_switch()
         if selected_card == 0:
             canvas.itemconfig(card_img[0], image=card_exampleImg)
             selected_card = 2
@@ -267,15 +346,7 @@ def click_card_change(event):
         env.change_card(1)
         print("change card2")
         env.reinforcement_card()
-        canvas.itemconfig(env_card_rein_img[0], image=card_rein_img[env.card[0].get_rein()])
-        canvas.itemconfig(env_card_rein_img[1], image=card_rein_img[env.card[1].get_rein()])
-        canvas.itemconfig(env_card_type_img[0], image=card_type_img[env.card[0].get_num()])
-        canvas.itemconfig(env_card_type_img[1], image=card_type_img[env.card[1].get_num()])
-        canvas.itemconfig(env_card_name_img[0], image=card_name_img[env.card[0].get_num()])
-        canvas.itemconfig(env_card_name_img[1], image=card_name_img[env.card[1].get_num()])
-        canvas.itemconfig(env_next_card_img[0], image=next_card_img1[env.nextcard[0].get_num()])
-        canvas.itemconfig(env_next_card_img[1], image=next_card_img1[env.nextcard[1].get_num()])
-        canvas.itemconfig(env_next_card_img[2], image=next_card_img2[env.nextcard[2].get_num()])
+        cards_img_switch()
         if selected_card == 0:
             canvas.itemconfig(card_img[0], image=card_exampleImg)
             selected_card = 2
@@ -283,14 +354,30 @@ def click_card_change(event):
             canvas.itemconfig(card_img[1], image=card_exampleImg)
             selected_card = 2
 
+def cards_img_switch():
+    canvas.itemconfig(env_card_rein_img[0], image=card_rein_img[env.card[0].get_rein()])
+    canvas.itemconfig(env_card_rein_img[1], image=card_rein_img[env.card[1].get_rein()])
+    canvas.itemconfig(env_card_type_img[0], image=card_type_img[env.card[0].get_num()])
+    canvas.itemconfig(env_card_type_img[1], image=card_type_img[env.card[1].get_num()])
+    canvas.itemconfig(env_card_name_img[0], image=card_name_img[env.card[0].get_num()])
+    canvas.itemconfig(env_card_name_img[1], image=card_name_img[env.card[1].get_num()])
+    canvas.itemconfig(env_next_card_img[0], image=next_card_img1[env.nextcard[0].get_num()])
+    canvas.itemconfig(env_next_card_img[1], image=next_card_img1[env.nextcard[1].get_num()])
+    canvas.itemconfig(env_next_card_img[2], image=next_card_img2[env.nextcard[2].get_num()])
+
 #마우스 이벤트
 canvas.bind("<Button-1>", click)
-#canvas.bind("<Motion>", hover)
+canvas.bind("<Motion>", hover)
 #canvas.bind("<ButtonRelease-1>", release)
 #canvas.bind("<B1-Motion>", motion)
 
 canvas.pack()
-
+class Slate:
+    def __init__(self, x, y):
+        self.num = 1
+        self.x = x
+        self.y = y
+    
 class Card:
     def __init__(self):
         global flag
@@ -309,82 +396,64 @@ class Card:
     def set_rein(self, rein):
         self.reinforcementStep = rein
 
-    def use_card(self, slate, x, y):
-        slate[x][y] = 0
+    def use_card(self, slate:Slate, x, y):
+        slate[x][y].num = 0
         if self.num == 0:
             for i in range(1, SLATE_NUM):
                 if random.randint(0, 100) >= 15 * (i - self.reinforcementStep):
                     if x - i >= 0 and y - i >= 0:
-                        slate[x - i][y - i] = 0
+                        slate[x - i][y - i].num = 0
                 if random.randint(0, 100) >= 15 * (i - self.reinforcementStep):
                     if x + i < SLATE_NUM and y - i >= 0:
-                        slate[x - i][y - i] = 0
+                        slate[x + i][y - i].num = 0
                 if random.randint(0, 100) >= 15 * (i - self.reinforcementStep):
                     if x - i >= 0 and y + i < SLATE_NUM:
-                        slate[x - i][y - i] = 0
+                        slate[x - i][y + i].num = 0
                 if random.randint(0, 100) >= 15 * (i - self.reinforcementStep):
                     if x + i < SLATE_NUM and y + i < SLATE_NUM:
-                        slate[x - i][y - i] = 0
+                        slate[x + i][y + i].num = 0
         elif self.num == 1:
             for i in range(1, SLATE_NUM):
                 if random.randint(0, 100) >= 15 * (i - self.reinforcementStep):
-                    if y - i >= 0:
-                        slate[x][y - i] = 0
+                    if x - i >= 0:
+                        slate[x - i][y].num = 0
                 if random.randint(0, 100) >= 15 * (i - self.reinforcementStep):
-                    if y + i < SLATE_NUM:
-                        slate[x][y + i] = 0
+                    if x + i < SLATE_NUM:
+                        slate[x + i][y].num = 0
         elif self.num == 2:
             for i in range(1, SLATE_NUM):
                 if random.randint(0, 100) >= 15 * (i - self.reinforcementStep):
-                    if x - i >= 0:
-                        slate[x - i][y] = 0
+                    if y - i >= 0:
+                        slate[x][y - i].num = 0
                 if random.randint(0, 100) >= 15 * (i - self.reinforcementStep):
-                    if x + i < SLATE_NUM:
-                        slate[x + i][y] = 0
+                    if y + i < SLATE_NUM:
+                        slate[x][y + i].num = 0
         elif self.num == 3:
             for i in range(1, SLATE_NUM):
                 if random.randint(0, 100) >= 15 * (i - self.reinforcementStep):
                     if y - i >= 0:
-                        slate[x][y - i] = 0
+                        slate[x][y - i].num = 0
                 if random.randint(0, 100) >= 15 * (i - self.reinforcementStep):
                     if y + i < SLATE_NUM:
-                        slate[x][y + i] = 0
+                        slate[x][y + i].num = 0
                 if random.randint(0, 100) >= 15 * (i - self.reinforcementStep):
                     if x - i >= 0:
-                        slate[x - i][y] = 0
+                        slate[x - i][y].num = 0
                 if random.randint(0, 100) >= 15 * (i - self.reinforcementStep):
                     if x + i < SLATE_NUM:
-                        slate[x + i][y] = 0
+                        slate[x + i][y].num = 0
         elif self.num == 4:
-            for i in range(-1,self.reinforcementStep + 1):
-                if random.randint(0, 100) <= 25 * (self.reinforcementStep - i):
-                    if y - i >= 0:
-                        slate[x][y - i] = 0
-                if random.randint(0, 100) <= 25 * (self.reinforcementStep - i):
-                    if y + i < SLATE_NUM:
-                        slate[x][y + i] = 0
-                if random.randint(0, 100) <= 25 * (self.reinforcementStep - i):
-                    if x - i >= 0:
-                        slate[x - i][y] = 0
-                if random.randint(0, 100) <= 25 * (self.reinforcementStep - i):
-                    if x + i < SLATE_NUM:
-                        slate[x + i][y] = 0
-                if random.randint(0, 100) <= 25 * (self.reinforcementStep - i):
-                    if x - i >= 0 and y - i >= 0:
-                        slate[x - i][y - i] = 0
-                if random.randint(0, 100) <= 25 * (self.reinforcementStep - i):
-                    if x + i < SLATE_NUM and y - i >= 0:
-                        slate[x - i][y - i] = 0
-                if random.randint(0, 100) <= 25 * (self.reinforcementStep - i):
-                    if x - i >= 0 and y + i < SLATE_NUM:
-                        slate[x - i][y - i] = 0
-                if random.randint(0, 100) <= 25 * (self.reinforcementStep - i):
-                    if x + i < SLATE_NUM and y + i < SLATE_NUM:
-                        slate[x - i][y - i] = 0
+            for row in range(0, SLATE_NUM):
+                for col in range(0, SLATE_NUM):
+                    distance = max(abs(row - x), abs(col - y))
+                    if distance < self.reinforcementStep + 2:
+                        if random.randint(0, 100) <= 25 * (self.reinforcementStep - distance + 2):
+                            slate[row][col].num = 0
+            
         total = SLATE_NUM * SLATE_NUM
-        for i in range(0,SLATE_NUM):
-            for j in range(0,SLATE_NUM):
-                if slate[i][j] != 0:
+        for i in range(0, SLATE_NUM):
+            for j in range(0, SLATE_NUM):
+                if slate[i][j].num != 0:
                     print(1, end=' ')
                     total = total - 1
                 else:
@@ -396,22 +465,20 @@ class Card:
 
                 
         
-class Slate:
-    def __init__(self, x, y):
-        self.num = 1
-        self.x = x
-        self.y = y
+
 
 class Env:
     def __init__(self):
         self.slate = [[0 for j in range(SLATE_NUM)] for i in range(SLATE_NUM)]
         self.card = [0 for _ in range(0,2)]
         self.nextcard = [0 for _ in range(0,3)]
-        for col in range(0,SLATE_NUM):
-            for row in range(0,SLATE_NUM):
-                self.slate[col][row] = Slate(col,row)
+        for row in range(0,SLATE_NUM):
+            for col in range(0,SLATE_NUM):
+                self.slate[row][col] = Slate(row,col)
         self.card[0] = Card()
         self.card[1] = Card()
+        while self.card[1].num == self.card[0].num:
+            self.card[1] = Card()
         self.nextcard[0] = Card()
         self.nextcard[1] = Card()
         self.nextcard[2] = Card()
