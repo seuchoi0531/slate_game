@@ -276,7 +276,6 @@ def hover_slate(event):
                                 if env.slate[row][col + i].num == 1:
                                     canvas.itemconfig(slate_img[row][col + i], image=breakprob15img[max(0, i - env.card[selected_card].reinforcementStep)])
                     elif env.card[selected_card].num == 4:
-                        
                         for x in range(0, SLATE_NUM):
                             for y in range(0, SLATE_NUM):
                                 distance = max(abs(row - x), abs(col - y))
@@ -329,30 +328,32 @@ def click_card(event):
 #카드 교체 클릭 인식 함수
 def click_card_change(event):
     global selected_card
-    if (event.x > 219 * UNIT and event.x < 279 * UNIT
-        and event.y > 220 * UNIT and event.y < 240 * UNIT):
-        env.change_card(0)
-        print("change card1")
-        env.reinforcement_card()
-        cards_img_switch()
-        if selected_card == 0:
-            canvas.itemconfig(card_img[0], image=card_exampleImg)
-            selected_card = 2
-        if selected_card == 1:
-            canvas.itemconfig(card_img[1], image=card_exampleImg)
-            selected_card = 2
-    if (event.x > 305 * UNIT and event.x < 365 * UNIT
-        and event.y > 220 * UNIT and event.y < 240 * UNIT):
-        env.change_card(1)
-        print("change card2")
-        env.reinforcement_card()
-        cards_img_switch()
-        if selected_card == 0:
-            canvas.itemconfig(card_img[0], image=card_exampleImg)
-            selected_card = 2
-        if selected_card == 1:
-            canvas.itemconfig(card_img[1], image=card_exampleImg)
-            selected_card = 2
+    if(env.change_num > 0):
+        env.change_num -= 1
+        if (event.x > 219 * UNIT and event.x < 279 * UNIT
+            and event.y > 220 * UNIT and event.y < 240 * UNIT):
+            env.change_card(0)
+            print("change card1")
+            env.reinforcement_card()
+            cards_img_switch()
+            if selected_card == 0:
+                canvas.itemconfig(card_img[0], image=card_exampleImg)
+                selected_card = 2
+            if selected_card == 1:
+                canvas.itemconfig(card_img[1], image=card_exampleImg)
+                selected_card = 2
+        if (event.x > 305 * UNIT and event.x < 365 * UNIT
+            and event.y > 220 * UNIT and event.y < 240 * UNIT):
+            env.change_card(1)
+            print("change card2")
+            env.reinforcement_card()
+            cards_img_switch()
+            if selected_card == 0:
+                canvas.itemconfig(card_img[0], image=card_exampleImg)
+                selected_card = 2
+            if selected_card == 1:
+                canvas.itemconfig(card_img[1], image=card_exampleImg)
+                selected_card = 2
 
 def cards_img_switch():
     canvas.itemconfig(env_card_rein_img[0], image=card_rein_img[env.card[0].get_rein()])
@@ -372,6 +373,7 @@ canvas.bind("<Motion>", hover)
 #canvas.bind("<B1-Motion>", motion)
 
 canvas.pack()
+
 class Slate:
     def __init__(self, x, y):
         self.num = 1
@@ -462,11 +464,7 @@ class Card:
         if total == 0:
             flag = 1
         return slate
-
-                
-        
-
-
+  
 class Env:
     def __init__(self):
         self.slate = [[0 for j in range(SLATE_NUM)] for i in range(SLATE_NUM)]
@@ -482,6 +480,7 @@ class Env:
         self.nextcard[0] = Card()
         self.nextcard[1] = Card()
         self.nextcard[2] = Card()
+        self.change_num = 100
     
     def use_card(self, x, y):
         global selected_card
@@ -539,7 +538,41 @@ class Env:
         self.nextcard[1] = self.nextcard[0]
         self.nextcard[0] = Card()
 
+class Agent:
+    def __init__(self):
+        self.q_table = np.zeros((5, 7, 4))
+        self.eps = 0.9
+        self.alpha = 0.01
+        self.change_rate = 0.1
+    
+    def select_action(self, slate, card, change_num):
+        coin = random.random()
+        card_change_flag = False
+        card_change_num = 0
+        card_num = 0
+        x = 0
+        y = 0
 
+        if coin < self.eps:
+            if(self.change_rate < random.random()):
+                x = random.randint(0,SLATE_NUM - 1)
+                y = random.randint(0,SLATE_NUM - 1)
+                while slate[x][y].num == 0:
+                    x = random.randint(0,SLATE_NUM - 1)
+                    y = random.randint(0,SLATE_NUM - 1)
+                card_num = random.randint(0,1)
+            else:
+                card_change_num = random.randint(0,1)
+        else:
+            x, y, card_num, card_change_num, card_change_flag = self.step(self, slate, card, change_num)
+        return x, y, card_num, card_change_num, card_change_flag
+    
+    def step(self, slate, card, change_num):
+        self
+
+    def anneal_eps(self):
+        self.eps -= 0.03
+        self.eps = max(self.eps, 0.1)
 
 env = Env()
 env_card_rein_img = [0 for _ in range(2)]
