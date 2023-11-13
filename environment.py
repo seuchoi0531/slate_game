@@ -11,7 +11,7 @@ UNIT = 3 # 픽셀 수
 HEIGHT = 250 # 세로
 WIDTH = 400 # 가로
 SLATE_LENGTH = 168 #석판 크기
-SLATE_NUM = 8 # 석판 개수
+SLATE_NUM = 6 # 석판 개수
 CARD_NUMBER = 5 #대폭발, 지진, 폭풍우, 해일, 충격파
 CARD_REIN = 10
 SPECIAL_SLATE_NUMBER = 4
@@ -163,26 +163,30 @@ canvas.create_image(81.75 * UNIT, 213 * UNIT, image=arrow1)
 arrow2 = arrow
 canvas.create_image(117.25 * UNIT, 213 * UNIT, image=arrow2)
 
-turn_text = canvas.create_text(292 * UNIT, 10 * UNIT, text=str(turn) + " turn", fill="black", font=("Helvetica 40 bold"))
+turn_text = canvas.create_text(292 * UNIT, 10 * UNIT, text=str(turn) + " turn", fill="black", font=("Helvetica ",str(10 * UNIT), " bold"))
 
 def click(event):
-    click_card(event)
-    click_slate(event)
-    click_card_change(event)
+    global flag
+    if flag == 0:
+        click_card(event)
+        click_slate(event)
+        click_card_change(event)
 
 hoverflag = 0
 def hover(event):
     global selected_card
     global hoverflag
-    if selected_card != 2:
-        if (event.x > 16 * UNIT and event.x < 16 * UNIT + SLATE_LENGTH * UNIT
-        and event.y > 16 * UNIT and event.y < 16 * UNIT + SLATE_LENGTH * UNIT):
-            hoverflag = 1
-            hover_slate(event)
-        else:
-            if hoverflag == 1:
-                hoverflag = 0
-                not_hover_slate(event)
+    global flag
+    if flag == 0:
+        if selected_card != 2:
+            if (event.x > 16 * UNIT and event.x < 16 * UNIT + SLATE_LENGTH * UNIT
+            and event.y > 16 * UNIT and event.y < 16 * UNIT + SLATE_LENGTH * UNIT):
+                hoverflag = 1
+                hover_slate(event)
+            else:
+                if hoverflag == 1:
+                    hoverflag = 0
+                    not_hover_slate(event)
 
 def release(event):
     release_slate(event)
@@ -203,47 +207,58 @@ def click_slate(event):
                 for col in range(0,SLATE_NUM):
                     if (event.x > 16 * UNIT + SLATE_LENGTH * UNIT * row / SLATE_NUM and event.x < 16 * UNIT + SLATE_LENGTH * UNIT * (row + 1) / SLATE_NUM 
                         and event.y > 16 * UNIT + SLATE_LENGTH * UNIT * col / SLATE_NUM and event.y < 16 * UNIT + SLATE_LENGTH * UNIT * (col + 1) / SLATE_NUM) :
-                        env.slate[env.special_slate_x][env.special_slate_y].num = 1
-                        canvas.itemconfig(slate_img[env.special_slate_x][env.special_slate_y], image=slateImg)
-                        canvas.itemconfig(slate_img[row][col], image=slate_clickImg)
-                        slate:Slate = env.use_card(row,col).slate
-                        canvas.itemconfig(change_numbering, image=change_number_img[env.change_num])
-                        env.finish()
-                        env.reinforcement_card()
-                        for y in range(0,SLATE_NUM):
-                            for x in range(0,SLATE_NUM):
-                                print(slate[x][y].num, end=' ')
-                                if slate[x][y].num == 0 :
-                                    canvas.itemconfig(slate_img[x][y], image=slate_breakImg)
-                                elif slate[x][y].num == 1:
-                                    canvas.itemconfig(slate_img[x][y], image=slateImg)
-                            print()
-                        cards_img_switch()
-                        if selected_card == 0:
-                            canvas.itemconfig(card_img[0], image=card_exampleImg)
-                            selected_card = 2
-                        if selected_card == 1:
-                            canvas.itemconfig(card_img[1], image=card_exampleImg)
-                            selected_card = 2
-                        nextturn = 1
-                        print("select slate : ", end='')
-                        print(row, end=' ')
-                        print(col, end='\n\n')
-                        time.sleep(0.1)
-            while nextturn == 1:
-                x = random.randint(0, SLATE_NUM - 1)
-                y = random.randint(0, SLATE_NUM - 1)
-                if env.slate[x][y].num == 1:
-                    env.special_slate_num = random.randint(2, SPECIAL_SLATE_NUMBER + 1)
-                    env.slate[x][y].num = env.special_slate_num
-                    env.special_slate_x = x
-                    env.special_slate_y = y
-                    canvas.itemconfig(slate_img[x][y], image=special_slate_img[env.slate[x][y].num - 2])
-                    canvas.itemconfig(special_slate_explanation, image=special_slate_explanation_img[env.slate[x][y].num - 2])
-                    nextturn = 0
-                    break
-            turn += 1
-            canvas.itemconfig(turn_text, text = str(turn) + " turn")
+                        if env.slate[row][col].num >0:
+                            env.slate[env.special_slate_x][env.special_slate_y].num = 1
+                            canvas.itemconfig(slate_img[env.special_slate_x][env.special_slate_y], image=slateImg)
+                            canvas.itemconfig(slate_img[row][col], image=slate_clickImg)
+                            slate:Slate = env.use_card(row,col).slate
+                            canvas.itemconfig(change_numbering, image=change_number_img[env.change_num])
+                            env.reinforcement_card()
+                            for y in range(0,SLATE_NUM):
+                                for x in range(0,SLATE_NUM):
+                                    print(slate[x][y].num, end=' ')
+                                    if slate[x][y].num == 0 :
+                                        canvas.itemconfig(slate_img[x][y], image=slate_breakImg)
+                                    elif slate[x][y].num == 1:
+                                        canvas.itemconfig(slate_img[x][y], image=slateImg)
+                                print()
+                            cards_img_switch()
+                            if selected_card == 0:
+                                canvas.itemconfig(card_img[0], image=card_exampleImg)
+                                selected_card = 2
+                            if selected_card == 1:
+                                canvas.itemconfig(card_img[1], image=card_exampleImg)
+                                selected_card = 2
+                            nextturn = 1
+                            print("select slate : ", end='')
+                            print(row, end=' ')
+                            print(col, end='\n\n')
+                            time.sleep(0.1)
+                            turn += 1
+                            canvas.itemconfig(turn_text, text = str(turn) + " turn")
+            total = 0
+            for row in range(0, SLATE_NUM):
+                for col in range(0, SLATE_NUM):
+                    if env.slate[row][col].num > 0:
+                        total += 1
+            print("total : ", total)
+            if total == 0:
+                print("ending!!")
+                flag = 1
+                env.finish()
+            else:
+                while nextturn == 1:
+                    x = random.randint(0, SLATE_NUM - 1)
+                    y = random.randint(0, SLATE_NUM - 1)
+                    if env.slate[x][y].num == 1:
+                        env.special_slate_num = random.randint(2, SPECIAL_SLATE_NUMBER + 1)
+                        env.slate[x][y].num = env.special_slate_num
+                        env.special_slate_x = x
+                        env.special_slate_y = y
+                        canvas.itemconfig(slate_img[x][y], image=special_slate_img[env.slate[x][y].num - 2])
+                        canvas.itemconfig(special_slate_explanation, image=special_slate_explanation_img[env.slate[x][y].num - 2])
+                        nextturn = 0
+                        break
     print("-----------------------------")
 
 #석판 클릭하면서 움직임 인식 함수
@@ -255,9 +270,6 @@ def motion_slate(event):
                 if (event.x > 16 * UNIT + SLATE_LENGTH * UNIT * row / SLATE_NUM and event.x < 16 * UNIT + SLATE_LENGTH * UNIT * (row + 1) / SLATE_NUM 
                     and event.y > 16 * UNIT + SLATE_LENGTH * UNIT * col / SLATE_NUM and event.y < 16 * UNIT + SLATE_LENGTH * UNIT * (col + 1) / SLATE_NUM) :
                     canvas.itemconfig(slate_img[row][col], image=slate_clickImg)
-                    #print(row, end=' ')
-                    #print(" ", end=' ')
-                    #print(col, end='\n\n')
                     time.sleep(0.1)
 
 #석판 호버 인식 함수
@@ -270,15 +282,12 @@ def hover_slate(event):
                 canvas.itemconfig(slate_img[row][col], image=slateImg)
             if env.slate[row][col].num == 0:
                 canvas.itemconfig(slate_img[row][col], image=slate_breakImg)
-    if turn != 0:
+    if env.slate[env.special_slate_x][env.special_slate_y].num > 1:
         canvas.itemconfig(slate_img[env.special_slate_x][env.special_slate_y], image=special_slate_img[env.slate[env.special_slate_x][env.special_slate_y].num - 2])
     for row in range(0,SLATE_NUM):
         for col in range(0,SLATE_NUM):
             if (event.x > 16 * UNIT + SLATE_LENGTH * UNIT * row / SLATE_NUM and event.x < 16 * UNIT + SLATE_LENGTH * UNIT * (row + 1) / SLATE_NUM 
                 and event.y > 16 * UNIT + SLATE_LENGTH * UNIT * col / SLATE_NUM and event.y < 16 * UNIT + SLATE_LENGTH * UNIT * (col + 1) / SLATE_NUM) :
-                #print(row, end=' ')
-                #print(" ", end=' ')
-                #print(col, end='\n\n')
                 if env.slate[row][col].num > 0 :
                     canvas.itemconfig(slate_img[row][col], image=breakprob15img[0])
                     if env.card[selected_card].num == 0:
@@ -358,9 +367,6 @@ def release_slate(event):
                 if (event.x > 16 * UNIT + SLATE_LENGTH * UNIT * row / SLATE_NUM and event.x < 16 * UNIT + SLATE_LENGTH * UNIT * (row + 1) / SLATE_NUM 
                     and event.y > 16 * UNIT + SLATE_LENGTH * UNIT * col / SLATE_NUM and event.y < 16 * UNIT + SLATE_LENGTH * UNIT * (col + 1) / SLATE_NUM) :
                     canvas.itemconfig(slate_img[row][col], image=slate_hoverImg)
-                    #print(row, end=' ')
-                    #print(" ", end=' ')
-                    #print(col, end='\n\n')
                     time.sleep(0.2)
 
 #카드 클릭 인식 함수
@@ -510,20 +516,6 @@ class Card:
                     if distance < self.reinforcementStep + 2:
                         if random.randint(0, 100) <= 25 * (self.reinforcementStep - distance + 2):
                             slate[row][col].num = 0
-            
-        total = SLATE_NUM * SLATE_NUM
-        for i in range(0, SLATE_NUM):
-            for j in range(0, SLATE_NUM):
-                print(slate[i][j].num, end=' ')
-                if slate[i][j].num > 0:
-                    total -= 1
-            print()
-        print("total : ", total)
-        if total == 0:
-            self.flag = 1
-            print("flag = 1")
-        else:
-            print("flag = 0")
         return slate
     
 class State:
@@ -590,6 +582,7 @@ class Env:
         return State(self.slate, self.card, self.nextcard, self.change_num)
     
     def reinforcement_card(self):
+        print("reinforcement")
         while self.card[0].get_num() == self.card[1].get_num():
             tmp = self.card[0].get_rein()
             if self.card[0].get_rein() < self.card[1].get_rein():
@@ -636,14 +629,12 @@ class Env:
                     if self.slate[row][col].num > 0:
                         total += 1
                         self.slate[row][col].num = 0
-            print('total = ', total, end=' ')
             while total > 0:
                 x = random.randint(0, SLATE_NUM - 1)
                 y = random.randint(0, SLATE_NUM - 1)
                 if self.slate[x][y].num == 0:
                     self.slate[x][y].num = 1
                     total -= 1
-                print('total = ', total, end=' ')
         elif self.special_slate_num == 3: # append
             print('append')
             if env.change_num < 9:
