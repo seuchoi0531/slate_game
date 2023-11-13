@@ -7,7 +7,7 @@ from PIL import ImageTk, Image
 import os
 import random
 
-UNIT = 2.5 # 픽셀 수
+UNIT = 3 # 픽셀 수
 HEIGHT = 250 # 세로
 WIDTH = 400 # 가로
 SLATE_LENGTH = 168 #석판 크기
@@ -30,6 +30,7 @@ breakprob15img = [0 for _ in range(7)]
 breakprob25img = [0 for _ in range(4)]
 change_number_img = [0 for _ in range(10)]
 special_slate_img = [0 for _ in range(SPECIAL_SLATE_NUMBER)]
+special_slate_explanation_img = [0 for _ in range(SPECIAL_SLATE_NUMBER)]
 
 
 selected_card = 2 #현재 고른 카드의 번호 / 0:왼쪽 1:오른쪽 2:선택안했음
@@ -55,7 +56,7 @@ card_click_exampleImg = ImageTk.PhotoImage(Image.open(os.path.join(current_dir, 
                                            .resize((int(60 * UNIT), int(90 * UNIT))))
 card_changeImg = ImageTk.PhotoImage(Image.open(os.path.join(current_dir, 'img/card_change.png'))
                                     .resize((int(60 * UNIT), int(20 * UNIT))))
-special_slate_explanation = ImageTk.PhotoImage(Image.open(os.path.join(current_dir, 'img/special_slate_explanation.png'))
+special_slate_explanationImg = ImageTk.PhotoImage(Image.open(os.path.join(current_dir, 'img/special_slate_explanation.png'))
                                                .resize((int(160 * UNIT), int(70 * UNIT))))
 nextCardPanel = ImageTk.PhotoImage(Image.open(os.path.join(current_dir, 'img/next_card_panel.png'))
                                    .resize((int(120 * UNIT), int(40 * UNIT))))
@@ -69,6 +70,14 @@ special_slate_img[2] = ImageTk.PhotoImage(Image.open(os.path.join(current_dir, '
                               .resize((int(SLATE_LENGTH * UNIT / SLATE_NUM), int(SLATE_LENGTH * UNIT / SLATE_NUM))))
 special_slate_img[3] = ImageTk.PhotoImage(Image.open(os.path.join(current_dir, 'img/special_slate_duplicate.png'))
                               .resize((int(SLATE_LENGTH * UNIT / SLATE_NUM), int(SLATE_LENGTH * UNIT / SLATE_NUM))))
+special_slate_explanation_img[0] = ImageTk.PhotoImage(Image.open(os.path.join(current_dir, 'img/special_slate_replace_explanation.png'))
+                                               .resize((int(160 * UNIT), int(70 * UNIT))))
+special_slate_explanation_img[1] = ImageTk.PhotoImage(Image.open(os.path.join(current_dir, 'img/special_slate_append_explanation.png'))
+                                               .resize((int(160 * UNIT), int(70 * UNIT))))
+special_slate_explanation_img[2] = ImageTk.PhotoImage(Image.open(os.path.join(current_dir, 'img/special_slate_reinforce_explanation.png'))
+                                               .resize((int(160 * UNIT), int(70 * UNIT))))
+special_slate_explanation_img[3] = ImageTk.PhotoImage(Image.open(os.path.join(current_dir, 'img/special_slate_duplicate_explanation.png'))
+                                               .resize((int(160 * UNIT), int(70 * UNIT))))
 
 probname = 'img/slate_breakprob'
 cardname = 'img/card_name'
@@ -133,7 +142,7 @@ card_change_img[0] = canvas.create_image(249 * UNIT, 230 * UNIT, image=card_chan
 card_change_img[1] = canvas.create_image(335 * UNIT, 230 * UNIT, image=card_change[1])
 
 #특수 석판 설명 생성
-canvas.create_image(292 * UNIT, 55 * UNIT, image=special_slate_explanation)
+special_slate_explanation = canvas.create_image(292 * UNIT, 55 * UNIT, image=special_slate_explanationImg)
 
 #교체 가능 횟수 생성
 change_numbering = canvas.create_image(292 * UNIT, 110 * UNIT, image=change_number_img[change_num])
@@ -153,6 +162,8 @@ arrow1 = arrow
 canvas.create_image(81.75 * UNIT, 213 * UNIT, image=arrow1)
 arrow2 = arrow
 canvas.create_image(117.25 * UNIT, 213 * UNIT, image=arrow2)
+
+turn_text = canvas.create_text(292 * UNIT, 10 * UNIT, text=str(turn) + " turn", fill="black", font=("Helvetica 40 bold"))
 
 def click(event):
     click_card(event)
@@ -183,6 +194,7 @@ def motion(event):
 def click_slate(event):
     global selected_card
     global flag
+    global turn
     nextturn = 0
     if selected_card != 2:
         if (event.x > 16 * UNIT and event.x < 16 * UNIT + SLATE_LENGTH * UNIT
@@ -194,8 +206,9 @@ def click_slate(event):
                         env.slate[env.special_slate_x][env.special_slate_y].num = 1
                         canvas.itemconfig(slate_img[env.special_slate_x][env.special_slate_y], image=slateImg)
                         canvas.itemconfig(slate_img[row][col], image=slate_clickImg)
-                        slate:Slate = env.use_card(row,col)[0]
+                        slate:Slate = env.use_card(row,col).slate
                         canvas.itemconfig(change_numbering, image=change_number_img[env.change_num])
+                        env.finish()
                         env.reinforcement_card()
                         for y in range(0,SLATE_NUM):
                             for x in range(0,SLATE_NUM):
@@ -226,8 +239,11 @@ def click_slate(event):
                     env.special_slate_x = x
                     env.special_slate_y = y
                     canvas.itemconfig(slate_img[x][y], image=special_slate_img[env.slate[x][y].num - 2])
+                    canvas.itemconfig(special_slate_explanation, image=special_slate_explanation_img[env.slate[x][y].num - 2])
                     nextturn = 0
                     break
+            turn += 1
+            canvas.itemconfig(turn_text, text = str(turn) + " turn")
     print("-----------------------------")
 
 #석판 클릭하면서 움직임 인식 함수
@@ -247,13 +263,15 @@ def motion_slate(event):
 #석판 호버 인식 함수
 def hover_slate(event):
     global selected_card
+    global turn
     for row in range(0,SLATE_NUM):
         for col in range(0,SLATE_NUM):
             if env.slate[row][col].num == 1:
                 canvas.itemconfig(slate_img[row][col], image=slateImg)
             if env.slate[row][col].num == 0:
                 canvas.itemconfig(slate_img[row][col], image=slate_breakImg)
-    canvas.itemconfig(slate_img[env.special_slate_x][env.special_slate_y], image=special_slate_img[env.slate[env.special_slate_x][env.special_slate_y].num - 2])
+    if turn != 0:
+        canvas.itemconfig(slate_img[env.special_slate_x][env.special_slate_y], image=special_slate_img[env.slate[env.special_slate_x][env.special_slate_y].num - 2])
     for row in range(0,SLATE_NUM):
         for col in range(0,SLATE_NUM):
             if (event.x > 16 * UNIT + SLATE_LENGTH * UNIT * row / SLATE_NUM and event.x < 16 * UNIT + SLATE_LENGTH * UNIT * (row + 1) / SLATE_NUM 
@@ -497,13 +515,23 @@ class Card:
         for i in range(0, SLATE_NUM):
             for j in range(0, SLATE_NUM):
                 print(slate[i][j].num, end=' ')
+                if slate[i][j].num > 0:
+                    total -= 1
             print()
         print("total : ", total)
-        if total == SLATE_NUM * SLATE_NUM:
-            flag = 1
+        if total == 0:
+            self.flag = 1
             print("flag = 1")
+        else:
+            print("flag = 0")
         return slate
-  
+    
+class State:
+    def __init__(self, slate, card, nextcard, change_num):
+        self.slate = slate
+        self.card = [card[0], card[1], nextcard[0], nextcard[1], nextcard[2]]
+        self.change_num = change_num
+
 class Env:
     def __init__(self):
         global flag
@@ -559,14 +587,14 @@ class Env:
         print(self.nextcard[1].get_rein())
         print("nextcard3 : ", self.nextcard[0].get_num(), end=' ')
         print(self.nextcard[0].get_rein(), end='\n\n')
-        return self.slate, self.card, self.nextcard
+        return State(self.slate, self.card, self.nextcard, self.change_num)
     
     def reinforcement_card(self):
         while self.card[0].get_num() == self.card[1].get_num():
             tmp = self.card[0].get_rein()
             if self.card[0].get_rein() < self.card[1].get_rein():
                 tmp = self.card[1].get_rein()
-            self.card[0].set_rein(tmp + 1)
+            self.card[0].set_rein(min(9, tmp + 1))
             self.card[1] = self.nextcard[2]
             self.nextcard[2] = self.nextcard[1]
             self.nextcard[1] = self.nextcard[0]
@@ -597,6 +625,7 @@ class Env:
         self.nextcard[2] = self.nextcard[1]
         self.nextcard[1] = self.nextcard[0]
         self.nextcard[0] = Card()
+        return State(self.slate, self.card, self.nextcard, self.change_num)
     
     def break_special_slate(self, use_card_num):
         if self.special_slate_num == 2: # replace
@@ -617,7 +646,8 @@ class Env:
                 print('total = ', total, end=' ')
         elif self.special_slate_num == 3: # append
             print('append')
-            env.change_num += 1
+            if env.change_num < 9:
+                env.change_num += 1
         elif self.special_slate_num == 4: # reinforce
             print('reinforce')
             if use_card_num == 0:
@@ -646,6 +676,10 @@ class Env:
                 self.nextcard[2] = self.nextcard[1]
                 self.nextcard[1] = self.nextcard[0]
                 self.nextcard[0] = Card()
+
+    def current_state(self):
+        return State(self.slate, self.card, self.nextcard, self.change_num)
+
 
 class Agent:
     def __init__(self):
@@ -704,6 +738,9 @@ env_card_type_img[1] = canvas.create_image(335 * UNIT, 180 * UNIT,
 env_next_card_img[0] = canvas.create_image(64 * UNIT, 211 * UNIT, image=next_card_img1[env.nextcard[0].get_num()])
 env_next_card_img[1] = canvas.create_image(99 * UNIT, 211 * UNIT, image=next_card_img1[env.nextcard[1].get_num()])
 env_next_card_img[2] = canvas.create_image(135 * UNIT, 209.5 * UNIT, image=next_card_img2[env.nextcard[2].get_num()])
+
+#canvas.create_text(WIDTH * UNIT / 2, HEIGHT * UNIT / 2, text="WIN", fill="black", font=("Helvetica 250 bold"))
+
 canvas.pack()
 
 w.mainloop()
