@@ -7,7 +7,7 @@ from PIL import ImageTk, Image
 import os
 import random
 
-UNIT = 3 # 픽셀 수
+UNIT = 1.5 # 픽셀 수
 HEIGHT = 250 # 세로
 WIDTH = 400 # 가로
 SLATE_LENGTH = 168 #석판 크기
@@ -163,7 +163,7 @@ canvas.create_image(81.75 * UNIT, 213 * UNIT, image=arrow1)
 arrow2 = arrow
 canvas.create_image(117.25 * UNIT, 213 * UNIT, image=arrow2)
 
-turn_text = canvas.create_text(292 * UNIT, 10 * UNIT, text=str(turn) + " turn", fill="black", font=("Helvetica ",str(10 * UNIT), " bold"))
+turn_text = canvas.create_text(292 * UNIT, 10 * UNIT, text=str(turn) + " turn", fill="black", font=("Helvetica ",str(int(10 * UNIT)), " bold"))
 
 def click(event):
     global flag
@@ -421,15 +421,15 @@ def click_card_change(event):
                 selected_card = 2
 
 def cards_img_switch():
-    canvas.itemconfig(env_card_rein_img[0], image=card_rein_img[env.card[0].get_rein()])
-    canvas.itemconfig(env_card_rein_img[1], image=card_rein_img[env.card[1].get_rein()])
-    canvas.itemconfig(env_card_type_img[0], image=card_type_img[env.card[0].get_num()])
-    canvas.itemconfig(env_card_type_img[1], image=card_type_img[env.card[1].get_num()])
-    canvas.itemconfig(env_card_name_img[0], image=card_name_img[env.card[0].get_num()])
-    canvas.itemconfig(env_card_name_img[1], image=card_name_img[env.card[1].get_num()])
-    canvas.itemconfig(env_next_card_img[0], image=next_card_img1[env.nextcard[0].get_num()])
-    canvas.itemconfig(env_next_card_img[1], image=next_card_img1[env.nextcard[1].get_num()])
-    canvas.itemconfig(env_next_card_img[2], image=next_card_img2[env.nextcard[2].get_num()])
+    canvas.itemconfig(env_card_rein_img[0], image=card_rein_img[env.card[0].reinforcementStep])
+    canvas.itemconfig(env_card_rein_img[1], image=card_rein_img[env.card[1].reinforcementStep])
+    canvas.itemconfig(env_card_type_img[0], image=card_type_img[env.card[0].num])
+    canvas.itemconfig(env_card_type_img[1], image=card_type_img[env.card[1].num])
+    canvas.itemconfig(env_card_name_img[0], image=card_name_img[env.card[0].num])
+    canvas.itemconfig(env_card_name_img[1], image=card_name_img[env.card[1].num])
+    canvas.itemconfig(env_next_card_img[0], image=next_card_img1[env.nextcard[0].num])
+    canvas.itemconfig(env_next_card_img[1], image=next_card_img1[env.nextcard[1].num])
+    canvas.itemconfig(env_next_card_img[2], image=next_card_img2[env.nextcard[2].num])
 
 #마우스 이벤트
 canvas.bind("<Button-1>", click)
@@ -450,18 +450,6 @@ class Card:
         global flag
         self.num = random.randint(0, CARD_NUMBER - 1)
         self.reinforcementStep = 0
-    
-    def get_num(self):
-        return int(self.num)
-    
-    def get_rein(self):
-        return int(self.reinforcementStep)
-    
-    def set_num(self, num):
-        self.num = num
-    
-    def set_rein(self, rein):
-        self.reinforcementStep = rein
 
     def use_card(self, slate:Slate, x, y):
         slate[x][y].num = 0
@@ -569,49 +557,49 @@ class Env:
             self.nextcard[2] = self.nextcard[1]
             self.nextcard[1] = self.nextcard[0]
             self.nextcard[0] = Card()
-        print("card1 : ", self.card[0].get_num(), end=' ')
-        print(self.card[0].get_rein())
-        print("card2 : ", self.card[1].get_num(), end=' ')
-        print(self.card[1].get_rein())
-        print("nextcard1 : ", self.nextcard[2].get_num(), end=' ')
-        print(self.nextcard[2].get_rein())
-        print("nextcard2 : ", self.nextcard[1].get_num(), end=' ')
-        print(self.nextcard[1].get_rein())
-        print("nextcard3 : ", self.nextcard[0].get_num(), end=' ')
-        print(self.nextcard[0].get_rein(), end='\n\n')
+        print("card1 : ", self.card[0].num, end=' ')
+        print(self.card[0].reinforcementStep)
+        print("card2 : ", self.card[1].num, end=' ')
+        print(self.card[1].reinforcementStep)
+        print("nextcard1 : ", self.nextcard[2].num, end=' ')
+        print(self.nextcard[2].reinforcementStep)
+        print("nextcard2 : ", self.nextcard[1].num, end=' ')
+        print(self.nextcard[1].reinforcementStep)
+        print("nextcard3 : ", self.nextcard[0].num, end=' ')
+        print(self.nextcard[0].reinforcementStep, end='\n\n')
         return State(self.slate, self.card, self.nextcard, self.change_num)
     
     def reinforcement_card(self):
         print("reinforcement")
-        while self.card[0].get_num() == self.card[1].get_num():
-            tmp = self.card[0].get_rein()
-            if self.card[0].get_rein() < self.card[1].get_rein():
-                tmp = self.card[1].get_rein()
-            self.card[0].set_rein(min(9, tmp + 1))
+        while self.card[0].num == self.card[1].num:
+            tmp = self.card[0].reinforcementStep
+            if self.card[0].reinforcementStep < self.card[1].reinforcementStep:
+                tmp = self.card[1].reinforcementStep
+            self.card[0].reinforcementStep = min(9, tmp + 1)
             self.card[1] = self.nextcard[2]
             self.nextcard[2] = self.nextcard[1]
             self.nextcard[1] = self.nextcard[0]
             self.nextcard[0] = Card()
-            print("card1 : ", self.card[0].get_num(), end=' ')
-            print(self.card[0].get_rein())
-            print("card2 : ", self.card[1].get_num(), end=' ')
-            print(self.card[1].get_rein())
-            print("nextcard1 : ", self.nextcard[2].get_num(), end=' ')
-            print(self.nextcard[2].get_rein())
-            print("nextcard2 : ", self.nextcard[1].get_num(), end=' ')
-            print(self.nextcard[1].get_rein())
-            print("nextcard3 : ", self.nextcard[0].get_num(), end=' ')
-            print(self.nextcard[0].get_rein(), end='\n\n')
-        print("card1 : ", self.card[0].get_num(), end=' ')
-        print(self.card[0].get_rein())
-        print("card2 : ", self.card[1].get_num(), end=' ')
-        print(self.card[1].get_rein())
-        print("nextcard1 : ", self.nextcard[2].get_num(), end=' ')
-        print(self.nextcard[2].get_rein())
-        print("nextcard2 : ", self.nextcard[1].get_num(), end=' ')
-        print(self.nextcard[1].get_rein())
-        print("nextcard3 : ", self.nextcard[0].get_num(), end=' ')
-        print(self.nextcard[0].get_rein(), end='\n\n')
+            print("card1 : ", self.card[0].num, end=' ')
+            print(self.card[0].reinforcementStep)
+            print("card2 : ", self.card[1].num, end=' ')
+            print(self.card[1].reinforcementStep)
+            print("nextcard1 : ", self.nextcard[2].num, end=' ')
+            print(self.nextcard[2].reinforcementStep)
+            print("nextcard2 : ", self.nextcard[1].num, end=' ')
+            print(self.nextcard[1].reinforcementStep)
+            print("nextcard3 : ", self.nextcard[0].num, end=' ')
+            print(self.nextcard[0].reinforcementStep, end='\n\n')
+        print("card1 : ", self.card[0].num, end=' ')
+        print(self.card[0].reinforcementStep)
+        print("card2 : ", self.card[1].num, end=' ')
+        print(self.card[1].reinforcementStep)
+        print("nextcard1 : ", self.nextcard[2].num, end=' ')
+        print(self.nextcard[2].reinforcementStep)
+        print("nextcard2 : ", self.nextcard[1].num, end=' ')
+        print(self.nextcard[1].reinforcementStep)
+        print("nextcard3 : ", self.nextcard[0].num, end=' ')
+        print(self.nextcard[0].reinforcementStep, end='\n\n')
     
     def change_card(self, num):
         self.card[num] = self.nextcard[2]
@@ -714,21 +702,21 @@ env_card_name_img = [0 for _ in range(2)]
 env_card_type_img = [0 for _ in range(2)]
 env_next_card_img = [0 for _ in range(3)]
 env_card_rein_img[0] = canvas.create_image(230 * UNIT, 140 * UNIT, 
-                    image=card_rein_img[env.card[0].get_rein()])
+                    image=card_rein_img[env.card[0].reinforcementStep])
 env_card_rein_img[1] = canvas.create_image(316 * UNIT, 140 * UNIT, 
-                    image=card_rein_img[env.card[1].get_rein()])
+                    image=card_rein_img[env.card[1].reinforcementStep])
 env_card_name_img[0] = canvas.create_image(255.5 * UNIT, 140 * UNIT, 
-                    image=card_name_img[env.card[0].get_num()])
+                    image=card_name_img[env.card[0].num])
 env_card_name_img[1] = canvas.create_image(341.5 * UNIT, 140 * UNIT, 
-                    image=card_name_img[env.card[1].get_num()])
+                    image=card_name_img[env.card[1].num])
 env_card_type_img[0] = canvas.create_image(249 * UNIT, 180 * UNIT, 
-                    image=card_type_img[env.card[0].get_num()])
+                    image=card_type_img[env.card[0].num])
 env_card_type_img[1] = canvas.create_image(335 * UNIT, 180 * UNIT, 
-                    image=card_type_img[env.card[1].get_num()])
+                    image=card_type_img[env.card[1].num])
 
-env_next_card_img[0] = canvas.create_image(64 * UNIT, 211 * UNIT, image=next_card_img1[env.nextcard[0].get_num()])
-env_next_card_img[1] = canvas.create_image(99 * UNIT, 211 * UNIT, image=next_card_img1[env.nextcard[1].get_num()])
-env_next_card_img[2] = canvas.create_image(135 * UNIT, 209.5 * UNIT, image=next_card_img2[env.nextcard[2].get_num()])
+env_next_card_img[0] = canvas.create_image(64 * UNIT, 211 * UNIT, image=next_card_img1[env.nextcard[0].num])
+env_next_card_img[1] = canvas.create_image(99 * UNIT, 211 * UNIT, image=next_card_img1[env.nextcard[1].num])
+env_next_card_img[2] = canvas.create_image(135 * UNIT, 209.5 * UNIT, image=next_card_img2[env.nextcard[2].num])
 
 #canvas.create_text(WIDTH * UNIT / 2, HEIGHT * UNIT / 2, text="WIN", fill="black", font=("Helvetica 250 bold"))
 
