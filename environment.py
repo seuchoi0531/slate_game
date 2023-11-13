@@ -223,6 +223,17 @@ class Env: # 환경 클래스
     def show_current_state(self):
         self.state.show_state()
 
+    # 파괴되지 않은 석판 개수를 리턴하는 함수
+    def total_slate(self):
+        total = 0
+        for row in range(0, SLATE_NUM):
+            for col in range(0, SLATE_NUM):
+                if self.slate[row][col] > 0:
+                    total += 1
+        print("남은 석판 수 : ", total) # 파괴되지 않은 석판 개수를 출력, 불필요하면 주석처리
+        return total
+        
+    # reset 함수
     def reset(self):
         for row in range(0, SLATE_NUM):
             for col in range(0, SLATE_NUM):
